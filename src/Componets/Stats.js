@@ -1,5 +1,5 @@
 import React from "react";
-import { Header, Divider, Segment, Table, Menu, Loader, Modal, Button, Icon, Form, Message } from "semantic-ui-react";
+import { Header, Divider, Segment, Table, Menu, Loader, Grid, Button, Icon, Form, Message } from "semantic-ui-react";
 import authApi from "../authApi";
 import { PaginationPartial } from "./Pagination"
 import  Validator from "validator"
@@ -12,37 +12,96 @@ export default class foodlog extends React.Component  {
     
     state = {
         loading: false,
+        type: "w",
+        foodlog: [],
+        chartData: []
+    }
+
+    componentDidMount() {
+        this.fetchFoodLog();
+    }
+    
+    fetchFoodLog = () =>
+    {
+        this.setState({loading:true});
+        if(this.state.type === "w")
+        {
+            authApi.getLastWeekFoodlog().then(res=>this.setState({foodlog:res.data.foodEntries}, ()=>{
+                this.processFoodLog(this.state.foodlog);
+            }));
+        } 
+        else{
+            authApi.getLastMonthFoodlog().then(res=>this.setState({foodlog:res.data.foodEntries}, ()=>{
+                this.processFoodLog(this.state.foodlog);
+            }));
+        }
+    }
+
+    processFoodLog = (foodlog) => {
+        var stats = {};
+        
+        foodlog.forEach(p => {
+            !(p.date.substr(0, 10) in stats) ? stats[p.date.substr(0, 10)] = p.product.kcal : stats[p.date.substr(0, 10)] += p.product.kcal;
+        });
+
+        var chartData = [];
+        
+        Object.keys(stats).forEach((key)=>{
+            chartData.push({date: key, kcal: stats[key]});
+        })
+
+        chartData.sort((a, b)=>{
+            a = new Date(a["date"]);
+            b = new Date(b["date"]);
+            return a<b ? -1 : a>b ? 1 : 0;
+        });
+        
+        this.setState({loading:false, chartData:chartData}); 
+    }
+
+    setWeek = () =>{
+        this.setState({type:"w"},()=>{
+            this.fetchFoodLog()
+        })
     }
 
     
+    setMonth = () =>{
+        this.setState({type:"m"},()=>{
+            this.fetchFoodLog()
+        })
+    }
+
     render = () => 
     (  
-
-        
         <div className="stats">
-            <Segment>
+            <style>
+                {`
+                    .centered {
+                        margin: 0 42.5%;
+                    }
+                `}
+            </style>
+            <Segment loading={this.state.loading}>
              <Header>Statystyki</Header>
              <Divider />
-             <LineChart width={1000} height={600} data={data}
+             <LineChart width={1100} height={600} data={this.state.chartData}
                 margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                <XAxis dataKey="name"/>
+                <XAxis dataKey="date"/>
                 <YAxis/>
                 <CartesianGrid strokeDasharray="3 3"/>
                 <Tooltip/>
                 <Legend />
-                <Line type="monotone" dataKey="pv" stroke="#8884d8" activeDot={{r: 8}}/>
-                <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
+                <Line type="monotone" dataKey="kcal" stroke="#8884d8" activeDot={{r: 8}}/>
                 </LineChart>
+
+                <div className="centered">
+                <Menu compact>
+                            <Menu.Item active={this.state.type==="w"} onClick={this.setWeek}>Tydzień</Menu.Item>
+                            <Menu.Item active={this.state.type==="m"} onClick={this.setMonth}>Miesiąc</Menu.Item>
+                </Menu>
+                </div>
              </Segment>
         </div>
     );
 }
-const data = [
-    {name: 'Page A', uv: 4000, pv: 2400, amt: 2400},
-    {name: 'Page B', uv: 3000, pv: 1398, amt: 2210},
-    {name: 'Page C', uv: 2000, pv: 9800, amt: 2290},
-    {name: 'Page D', uv: 2780, pv: 3908, amt: 2000},
-    {name: 'Page E', uv: 1890, pv: 4800, amt: 2181},
-    {name: 'Page F', uv: 2390, pv: 3800, amt: 2500},
-    {name: 'Page G', uv: 3490, pv: 4300, amt: 2100},
-];

@@ -40,9 +40,12 @@ instance.interceptors.request.use( (config)=>{
 
 export default {
     getFoodlog: () => instance.get("/foodlog"),
+    getLastWeekFoodlog: () => instance.get("/foodlog/lastweek"),
+    getLastMonthFoodlog: () => instance.get("/foodlog/lastmonth"),
     postFoodlog: (foodEntry) => instance.post("/foodlog", foodEntry),
     cancelAccessToken: () => instance.post("/tokens/cancel"),
     getProducts: (page, pageSize) => instance.get("/products", {params:{page: page, pageSize:pageSize}}),
+    getProductsByName: (name, page=1, pageSize=10) => instance.get("/products", {params:{name:name, page: page, pageSize:pageSize}}),
     getProduct: (productId) => instance.get(`/produtcs/${productId}`),
     postProduct: (product) => instance.post("/products", product),
     patchProduct: (patch) => instance.patch("/products", patch)
